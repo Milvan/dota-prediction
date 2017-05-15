@@ -48,21 +48,23 @@ from sklearn.metrics import roc_auc_score
 # batch eta lambda units
 
 results = open('/tmp/dota_coarse_search.csv', 'a')
-#results.write("val_acc, auc, val_acc_certain, auc_certain, batch_size, lstm_size, dense_size, regularization lstm, eta")
+results.write("val_acc, auc, val_acc_certain, auc_certain, batch_size, lstm_size, dense_size, regularization lstm, eta\n")
 
 batch_sizes = [2**y for y in range(5,10)]
 
-for i in range(1):
+i=0
+while(True):
+    i+=1
 
     print("Network number %i in training" % i)
 
     batch_size = np.random.choice(batch_sizes)
     #print("batch size: ", batch_size)
-    lstm_size = np.random.randint(low=50, high=1500)
+    lstm_size = np.random.randint(low=50, high=1000)
     #print("lstm size: ", lstm_size)
     regu = np.random.uniform(low=0, high=0.1)
     #print("regularization: ", regu)
-    eta = np.random.uniform(low=1e-6, high=0.01)
+    eta = np.random.uniform(low=1e-6, high=0.0035)
     #print("eta: ", eta)
 
     model = Sequential()
@@ -75,7 +77,7 @@ for i in range(1):
         )
 
 
-    dense_size = np.random.randint(low=50,high=2000)
+    dense_size = np.random.randint(low=50,high=1500)
     #print("dense size: ", dense_size)
     model.add(Dense(
         units=dense_size))
@@ -88,13 +90,13 @@ for i in range(1):
     model.compile(loss='categorical_crossentropy', optimizer=keras.optimizers.RMSprop(lr=eta), metrics=[keras.metrics.mae, keras.metrics.categorical_accuracy])
 
     model_checkpoint = keras.callbacks.ModelCheckpoint('/tmp/best_weights', monitor='val_categorical_accuracy', verbose=0, save_best_only=True, save_weights_only=False, mode='auto', period=1)
-    history = model.fit(x_train, y_train, epochs=10, batch_size=batch_size, validation_split=0.0, validation_data=(x_val, y_val), verbose=2, callbacks = [model_checkpoint])
+    history = model.fit(x_train, y_train, epochs=10, batch_size=batch_size, validation_split=0.0, validation_data=(x_val, y_val), verbose=0, callbacks = [model_checkpoint])
 
     model.load_weights('/tmp/best_weights')
 
 
     # Test loss and accuracy
-    loss_and_metrics1 = model.evaluate(x_val, y_val, verbose=2)
+    loss_and_metrics1 = model.evaluate(x_val, y_val, verbose=0)
 
 
     ## Calculate AUC
@@ -111,15 +113,16 @@ for i in range(1):
     #print(ind)
     #print(y_pred2.shape)
     #print(y_pred.shape)
-    score2 = roc_auc_score(y_val2, y_pred2)
+    score2 = 0 if len(y_pred2)==0 else roc_auc_score(y_val2, y_pred2)
     #print(score2)
 
-    loss_and_metrics2 = model.evaluate(x_val2, y_val2, verbose=2)
+    loss_and_metrics2 = [0,0,0] if len(y_pred2)==0 else model.evaluate(x_val2, y_val2, verbose=2)
     #print(loss_and_metrics)
 
     log = ",".join( list(map(str, [loss_and_metrics1[2], score1, loss_and_metrics2[2], score2, batch_size, lstm_size, dense_size, regu, eta, ]))) + "\n"
     print(log)
     results.write(log)
+    results.flush()
     #print(loss_and_metrics)
 
 results.close()
