@@ -1,3 +1,7 @@
+## This script performs a random search for hyper parameters
+## of a fully connected neural network 
+
+
 import numpy as np
 data = np.load('/tmp/game_data.npy')
 labels = np.load('/tmp/game_labels.npy')
@@ -37,15 +41,11 @@ while(True):
 
     print("Network number %i in training" % i)
 
-    batch_size =100# np.random.choice(batch_sizes)
-    #print("batch size: ", batch_size)
+    batch_size = np.random.choice(batch_sizes)
     lstm_size = 0;
-    dense_size =500# np.random.randint(low=50, high=2000)
-    #print("lstm size: ", lstm_size)
-    regu = 0.01# np.random.uniform(low=0, high=0.1)
-    #print("regularization: ", regu)
-    eta = 0.001# np.random.uniform(low=1e-6, high=0.035)
-    #print("eta: ", eta)
+    dense_size = np.random.randint(low=50, high=2000)
+    regu = np.random.uniform(low=0, high=0.1)
+    eta =  np.random.uniform(low=1e-6, high=0.035)
 
     model = Sequential()
 
@@ -76,9 +76,6 @@ while(True):
     y_pred2 = y_pred[ind,:]
     y_val2 = y_val[ind,:]
     x_val2 = x_val[ind,:]
-    #print(ind)
-    #print(y_pred2.shape)
-    #print(y_pred.shape)
 
     score2 = 0
     loss_and_metrics2 = [0,0,0]
@@ -86,16 +83,13 @@ while(True):
     certain_count = len(y_pred2)
     if len(np.unique(y_val2[:,0])) >1:
         score2 = 0 if len(y_pred2)==0 else roc_auc_score(y_val2, y_pred2)
-        #print(score2)
 
         loss_and_metrics2 = [0,0,0] if len(y_pred2)==0 else model.evaluate(x_val2, y_val2, verbose=2)
-        #print(loss_and_metrics)
 
     log = ",".join( list(map(str, [loss_and_metrics1[2], score1, loss_and_metrics2[2], score2, batch_size, lstm_size, dense_size, regu, eta, ]))) + "\n"
     print(log)
     results.write(log)
     results.flush()
-    #print(loss_and_metrics)
 
 results.close()
 

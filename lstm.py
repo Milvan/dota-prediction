@@ -1,3 +1,6 @@
+## This script performs a random search for hyper parameters
+## of neural network consisting of an LSTM and fully connected layers 
+
 import numpy as np
 
 games = np.load('/tmp/game_data.npy')
@@ -29,10 +32,6 @@ y_val = labels_binary_length_corrected[train_split:val_split,:]
 x_test = data[val_split:,:]
 y_test = labels_binary_length_corrected[val_split:,:]
 
-#x_train = np.reshape(x_train, x_train.shape + (1,))
-#x_test = np.reshape(x_test, x_test.shape + (1,))
-
-print(x_train.shape)
 
 from keras.layers import Dense, Activation
 from keras.models import Sequential
@@ -59,13 +58,10 @@ while(True):
     print("Network number %i in training" % i)
 
     batch_size = np.random.choice(batch_sizes)
-    #print("batch size: ", batch_size)
     lstm_size = np.random.randint(low=50, high=1000)
-    #print("lstm size: ", lstm_size)
     regu = np.random.uniform(low=0, high=0.1)
-    #print("regularization: ", regu)
     eta = np.random.uniform(low=1e-6, high=0.0035)
-    #print("eta: ", eta)
+    dense_size = np.random.randint(low=50,high=1500)
 
     model = Sequential()
 
@@ -77,16 +73,14 @@ while(True):
         )
 
 
-    dense_size = np.random.randint(low=50,high=1500)
-    #print("dense size: ", dense_size)
     model.add(Dense(
-        units=dense_size))
+        units=dense_size,
+        kernel_regularizer= l2(regu)))
     model.add(Activation('relu'))
 
     model.add(Dense(
         units=2))
     model.add(Activation('softmax'))
-    #model.compile(loss='mse', optimizer='rmsprop')
     model.compile(loss='categorical_crossentropy', optimizer=keras.optimizers.RMSprop(lr=eta), metrics=[keras.metrics.mae, keras.metrics.categorical_accuracy])
 
     model_checkpoint = keras.callbacks.ModelCheckpoint('/tmp/best_weights', monitor='val_categorical_accuracy', verbose=0, save_best_only=True, save_weights_only=False, mode='auto', period=1)
@@ -110,20 +104,14 @@ while(True):
     y_pred2 = y_pred[ind,:]
     y_val2 = y_val[ind,:]
     x_val2 = x_val[ind,:]
-    #print(ind)
-    #print(y_pred2.shape)
-    #print(y_pred.shape)
     score2 = 0 if len(y_pred2)==0 else roc_auc_score(y_val2, y_pred2)
-    #print(score2)
 
     loss_and_metrics2 = [0,0,0] if len(y_pred2)==0 else model.evaluate(x_val2, y_val2, verbose=2)
-    #print(loss_and_metrics)
 
     log = ",".join( list(map(str, [loss_and_metrics1[2], score1, loss_and_metrics2[2], score2, batch_size, lstm_size, dense_size, regu, eta, ]))) + "\n"
     print(log)
     results.write(log)
     results.flush()
-    #print(loss_and_metrics)
 
 results.close()
 
